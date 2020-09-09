@@ -75,20 +75,11 @@ def print_blockchain_elements():
         print(block)
 
 
-def print_participants():
-    print(participants)
-
-
-def print_blockchain():
-    print(blockchain)
-
-
 while True:
     print("Hello, please choose: ")
     print("1: Add a new transaction")
     print("2: Mine a new block")
     print("3: Output the blockchain blocks")
-    print("4: Output participants")
     print("q: Quit")
     user_choice = get_user_choice()
 
@@ -103,10 +94,8 @@ while True:
             break
     elif user_choice == "3":
         print_blockchain_elements()
-    elif user_choice == "4":
-        print_participants()
     elif user_choice == "q":
         break
 
 
-print_blockchain()
+print(blockchain)
