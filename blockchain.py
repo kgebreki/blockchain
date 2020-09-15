@@ -14,18 +14,28 @@ def get_last_blockchain_value():
 
 def add_transaction(recepient, sender=owner, amount=1.0):
     transaction = {"sender": sender, "recepient": recepient, "amount": amount}
-    outstanding_transactions.append(transaction)
-    participants.add(sender)
-    participants.add(recepient)
+
+    if verify_transaction(transaction):
+        outstanding_transactions.append(transaction)
+        participants.add(sender)
+        participants.add(recepient)
+        return True
+    else:
+        return False
+
+def verify_transaction(transaction):
+    sender_balance = get_balance(transaction["sender"])
+    print(transaction["sender"], sender_balance)
+    return sender_balance >= transaction["amount"]
 
 
 def mine_block():
     global outstanding_transactions
+
+    mining_reward_transaction = {"sender": None, "recepient": owner, "amount": MINING_REWARD}
+    outstanding_transactions.append(mining_reward_transaction)
+
     last_block = get_last_blockchain_value()
-
-    mining_transaction = {"sender": None, "recepient": owner, "amount": MINING_REWARD}
-    outstanding_transactions.append(mining_transaction)
-
     new_block = {
         "hash": hash_block(last_block),
         "index": int(last_block["index"]) + 1,
@@ -60,6 +70,10 @@ def get_balance(participant):
             elif transaction["recepient"] == participant:
                 amount_received += transaction["amount"]
 
+    for transaction in outstanding_transactions:
+        if transaction["sender"] == participant:
+            amount_sent += transaction["amount"]
+
     return float(amount_received - amount_sent)
 
 
@@ -90,7 +104,10 @@ while True:
     if user_choice == "1":
         tx_details = get_transaction_details()
         recepient, amount = tx_details
-        add_transaction(recepient, amount=amount)
+        if add_transaction(recepient, amount=amount):
+            print("Transaction Successful!")
+        else:
+            print("Transaction Failed! Insufficient funds.")
     elif user_choice == "2":
         mine_block()
         if not verify_blockchain():
