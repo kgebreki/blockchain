@@ -1,3 +1,4 @@
+MINING_REWARD = 10
 gen_block = {"hash": "", "index": 0, "transactions": []}
 blockchain = [gen_block]
 outstanding_transactions = []
@@ -21,6 +22,9 @@ def add_transaction(recepient, sender=owner, amount=1.0):
 def mine_block():
     global outstanding_transactions
     last_block = get_last_blockchain_value()
+
+    mining_transaction = {"sender": None, "recepient": owner, "amount": MINING_REWARD}
+    outstanding_transactions.append(mining_transaction)
 
     new_block = {
         "hash": hash_block(last_block),
