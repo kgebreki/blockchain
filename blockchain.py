@@ -1,5 +1,8 @@
+import hashlib
+import json
+
 MINING_REWARD = 10
-gen_block = {"hash": "", "index": 0, "transactions": []}
+gen_block = {"prev_hash": "", "index": 0, "transactions": []}
 blockchain = [gen_block]
 outstanding_transactions = []
 owner = "Kaleb"
@@ -26,7 +29,6 @@ def add_transaction(recepient, sender=owner, amount=1.0):
 
 def verify_transaction(transaction):
     sender_balance = get_balance(transaction["sender"])
-    print(transaction["sender"], sender_balance)
     return sender_balance >= transaction["amount"]
 
 
@@ -42,7 +44,7 @@ def mine_block():
 
     last_block = get_last_blockchain_value()
     new_block = {
-        "hash": hash_block(last_block),
+        "prev_hash": hash_block(last_block),
         "index": int(last_block["index"]) + 1,
         "transactions": outstanding_transactions,
     }
@@ -52,14 +54,14 @@ def mine_block():
 
 
 def hash_block(block):
-    return "-".join([str(block[key]) for key in block])
+    return hashlib.sha256(json.dumps(block).encode()).hexdigest()
 
 
 def verify_blockchain():
     for (index, block) in enumerate(blockchain):
         if index == 0:
             continue
-        if block["hash"] != hash_block(blockchain[index - 1]):
+        if block["prev_hash"] != hash_block(blockchain[index - 1]):
             return False
     return True
 
@@ -92,7 +94,7 @@ def get_user_choice():
     return input("Your choice: ")
 
 
-def print_blockchain_elements():
+def print_blockchain():
     print(blockchain)
 
 
@@ -105,7 +107,7 @@ while True:
     print("Hello, please choose: ")
     print("1: Add a new transaction")
     print("2: Mine a new block")
-    print("3: Output the blockchain blocks")
+    print("3: Print blockchain")
     print("4: Get balance for participants")
     print("q: Quit")
     user_choice = get_user_choice()
@@ -123,7 +125,7 @@ while True:
             print("Invalid blockchain!")
             break
     elif user_choice == "3":
-        print_blockchain_elements()
+        print_blockchain()
     elif user_choice == "4":
         print_participant_balance()
     elif user_choice == "q":
