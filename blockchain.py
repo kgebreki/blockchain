@@ -23,6 +23,7 @@ def add_transaction(recepient, sender=owner, amount=1.0):
     else:
         return False
 
+
 def verify_transaction(transaction):
     sender_balance = get_balance(transaction["sender"])
     print(transaction["sender"], sender_balance)
@@ -32,7 +33,11 @@ def verify_transaction(transaction):
 def mine_block():
     global outstanding_transactions
 
-    mining_reward_transaction = {"sender": None, "recepient": owner, "amount": MINING_REWARD}
+    mining_reward_transaction = {
+        "sender": None,
+        "recepient": owner,
+        "amount": MINING_REWARD,
+    }
     outstanding_transactions.append(mining_reward_transaction)
 
     last_block = get_last_blockchain_value()
@@ -88,9 +93,12 @@ def get_user_choice():
 
 
 def print_blockchain_elements():
-    for block in blockchain:
-        print("Outputting Block")
-        print(block)
+    print(blockchain)
+
+
+def print_participant_balance():
+    for participant in participants:
+        print("{}  {:6.2f}".format(participant, get_balance(participant)))
 
 
 while True:
@@ -98,6 +106,7 @@ while True:
     print("1: Add a new transaction")
     print("2: Mine a new block")
     print("3: Output the blockchain blocks")
+    print("4: Get balance for participants")
     print("q: Quit")
     user_choice = get_user_choice()
 
@@ -115,8 +124,7 @@ while True:
             break
     elif user_choice == "3":
         print_blockchain_elements()
+    elif user_choice == "4":
+        print_participant_balance()
     elif user_choice == "q":
         break
-
-
-print(blockchain)
