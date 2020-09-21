@@ -1,22 +1,24 @@
-import hashlib
-import json
+from blockchain_util import sha256, hash_block, get_transaction_details, get_user_choice
+from collections import OrderedDict
 
 MINING_REWARD = 10
-gen_block = {"prev_hash": "", "index": 0, "transactions": []}
+gen_block = {"prev_hash": "", "index": 0, "transactions": [], "proof_of_work": 0}
 blockchain = [gen_block]
 outstanding_transactions = []
 owner = "Kaleb"
 participants = {owner}
 
 
-def get_last_blockchain_value():
+def get_last_block():
     if len(blockchain) < 1:
         return None
     return blockchain[-1]
 
 
 def add_transaction(recepient, sender=owner, amount=1.0):
-    transaction = {"sender": sender, "recepient": recepient, "amount": amount}
+    transaction = OrderedDict(
+        [("sender", sender), ("recepient", recepient), ("amount", amount)]
+    )
 
     if verify_transaction(transaction):
         outstanding_transactions.append(transaction)
@@ -27,34 +29,47 @@ def add_transaction(recepient, sender=owner, amount=1.0):
         return False
 
 
+def valid_proof_of_work(prev_hash, outstanding_transactions, proof_of_work):
+    guess = (
+        str(prev_hash) + str(outstanding_transactions) + str(proof_of_work)
+    ).encode()
+    return sha256(guess)[0:2] == "00"
+
+
+def get_proof_of_work():
+    proof_of_work = 0
+
+    while not valid_proof_of_work(
+        hash_block(get_last_block()), outstanding_transactions, proof_of_work
+    ):
+        proof_of_work += 1
+    return proof_of_work
+
+
 def verify_transaction(transaction):
+    if transaction["sender"] == transaction["recepient"]:
+        return False
     sender_balance = get_balance(transaction["sender"])
     return sender_balance >= transaction["amount"]
 
 
 def mine_block():
     global outstanding_transactions
+    proof_of_work = get_proof_of_work()
 
-    mining_reward_transaction = {
-        "sender": None,
-        "recepient": owner,
-        "amount": MINING_REWARD,
-    }
+    mining_reward_transaction = OrderedDict(
+        [("sender", None), ("recepient", owner), ("amount", MINING_REWARD)]
+    )
     outstanding_transactions.append(mining_reward_transaction)
 
-    last_block = get_last_blockchain_value()
     new_block = {
-        "prev_hash": hash_block(last_block),
-        "index": int(last_block["index"]) + 1,
+        "prev_hash": hash_block(get_last_block()),
+        "index": int(get_last_block()["index"]) + 1,
         "transactions": outstanding_transactions,
+        "proof_of_work": proof_of_work,
     }
-
     outstanding_transactions = []
     blockchain.append(new_block)
-
-
-def hash_block(block):
-    return hashlib.sha256(json.dumps(block).encode()).hexdigest()
 
 
 def verify_blockchain():
@@ -62,6 +77,11 @@ def verify_blockchain():
         if index == 0:
             continue
         if block["prev_hash"] != hash_block(blockchain[index - 1]):
+            return False
+        if not valid_proof_of_work(
+            block["prev_hash"], block["transactions"][:-1], block["proof_of_work"]
+        ):
+            print("Proof of work not valid!")
             return False
     return True
 
@@ -80,22 +100,7 @@ def get_balance(participant):
     for transaction in outstanding_transactions:
         if transaction["sender"] == participant:
             amount_sent += transaction["amount"]
-
     return float(amount_received - amount_sent)
-
-
-def get_transaction_details():
-    recepient = input("Please enter recepient: ")
-    amount = float(input("Enter transaction amount: "))
-    return recepient, amount
-
-
-def get_user_choice():
-    return input("Your choice: ")
-
-
-def print_blockchain():
-    print(blockchain)
 
 
 def print_participant_balance():
@@ -118,14 +123,14 @@ while True:
         if add_transaction(recepient, amount=amount):
             print("Transaction Successful!")
         else:
-            print("Transaction Failed! Insufficient funds.")
+            print("Transaction Failed!")
     elif user_choice == "2":
         mine_block()
         if not verify_blockchain():
             print("Invalid blockchain!")
             break
     elif user_choice == "3":
-        print_blockchain()
+        print(blockchain)
     elif user_choice == "4":
         print_participant_balance()
     elif user_choice == "q":
