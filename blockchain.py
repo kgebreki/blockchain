@@ -1,5 +1,6 @@
 from blockchain_util import sha256, hash_block, get_transaction_details, get_user_choice
 from collections import OrderedDict
+import json
 
 MINING_REWARD = 10
 gen_block = {"prev_hash": "", "index": 0, "transactions": [], "proof_of_work": 0}
@@ -24,6 +25,7 @@ def add_transaction(recepient, sender=owner, amount=1.0):
         outstanding_transactions.append(transaction)
         participants.add(sender)
         participants.add(recepient)
+        save_data()
         return True
     else:
         return False
@@ -33,6 +35,7 @@ def valid_proof_of_work(prev_hash, outstanding_transactions, proof_of_work):
     guess = (
         str(prev_hash) + str(outstanding_transactions) + str(proof_of_work)
     ).encode()
+    print(guess)
     return sha256(guess)[0:2] == "00"
 
 
@@ -70,6 +73,7 @@ def mine_block():
     }
     outstanding_transactions = []
     blockchain.append(new_block)
+    save_data()
 
 
 def verify_blockchain():
@@ -77,6 +81,7 @@ def verify_blockchain():
         if index == 0:
             continue
         if block["prev_hash"] != hash_block(blockchain[index - 1]):
+            print("Blockchain may have split. There is a block that is out of order")
             return False
         if not valid_proof_of_work(
             block["prev_hash"], block["transactions"][:-1], block["proof_of_work"]
@@ -101,6 +106,28 @@ def get_balance(participant):
         if transaction["sender"] == participant:
             amount_sent += transaction["amount"]
     return float(amount_received - amount_sent)
+
+
+def save_data():
+    with open("blockchain.txt", mode="w") as file:
+        file.write(json.dumps(blockchain))
+        file.write("\n")
+        file.write(json.dumps(outstanding_transactions))
+        #file.write("\n")
+        #file.write(json.dumps(participants))
+
+
+def load_data():
+    global blockchain, outstanding_transactions, participants
+    with open("blockchain.txt", mode="r") as file:
+        file_content = file.readlines()        
+        blockchain = json.loads(file_content[0][:-1])
+        outstanding_transactions = json.loads(file_content[1])
+        #participants = json.loads(file_content[2])
+        
+
+
+load_data()
 
 
 def print_participant_balance():
