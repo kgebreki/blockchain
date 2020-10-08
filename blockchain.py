@@ -68,7 +68,7 @@ def mine_block():
         "prev_hash": hash_block(get_last_block()),
         "index": int(get_last_block()["index"]) + 1,
         "transactions": outstanding_transactions,
-        "proof_of_work": proof_of_work
+        "proof_of_work": proof_of_work,
     }
 
     if verify_blockchain:
@@ -76,7 +76,7 @@ def mine_block():
         outstanding_transactions = []
         save_data()
         return True
-    
+
     # Mining unsuccessful so don't add minging reward
     outstanding_transactions.pop()
     return False
@@ -124,7 +124,7 @@ def save_data():
 
 
 def load_data():
-    global blockchain, outstanding_transactions #, participants
+    global blockchain, outstanding_transactions  # , participants
     with open("blockchain.txt", mode="r") as file:
         file_content = file.readlines()
         blockchain = json.loads(file_content[0][:-1])
@@ -137,14 +137,29 @@ def load_data():
             updated_block = {
                 "prev_hash": block["prev_hash"],
                 "index": block["index"],
-                "transactions": [OrderedDict([("sender", tx["sender"]), ("recepient", tx["recepient"]), ("amount", tx["amount"])]) for tx in block["transactions"]],
-                "proof_of_work": block["proof_of_work"]
+                "transactions": [
+                    OrderedDict(
+                        [
+                            ("sender", tx["sender"]),
+                            ("recepient", tx["recepient"]),
+                            ("amount", tx["amount"]),
+                        ]
+                    )
+                    for tx in block["transactions"]
+                ],
+                "proof_of_work": block["proof_of_work"],
             }
             updated_blockchain.append(updated_block)
         blockchain = updated_blockchain
 
         for txn in outstanding_transactions:
-            updated_txn = OrderedDict([("sender", txn["sender"]), ("recepient", txn["recepient"]), ("amount", txn["amount"])])
+            updated_txn = OrderedDict(
+                [
+                    ("sender", txn["sender"]),
+                    ("recepient", txn["recepient"]),
+                    ("amount", txn["amount"]),
+                ]
+            )
             updated_outstanding_transactions.append(updated_txn)
         outstanding_transactions = updated_outstanding_transactions
 
