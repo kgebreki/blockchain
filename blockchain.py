@@ -3,8 +3,7 @@ from collections import OrderedDict
 import json
 
 MINING_REWARD = 10
-gen_block = {"prev_hash": "", "index": 0, "transactions": [], "proof_of_work": 0}
-blockchain = [gen_block]
+blockchain = []
 outstanding_transactions = []
 owner = "Kaleb"
 participants = {owner}
@@ -34,7 +33,6 @@ def valid_proof_of_work(prev_hash, outstanding_transactions, proof_of_work):
     guess = (
         str(prev_hash) + str(outstanding_transactions) + str(proof_of_work)
     ).encode()
-    print(guess)
     return sha256(guess)[0:2] == "00"
 
 
@@ -115,55 +113,67 @@ def get_balance(participant):
 
 
 def save_data():
-    with open("blockchain.txt", mode="w") as file:
-        file.write(json.dumps(blockchain))
-        file.write("\n")
-        file.write(json.dumps(outstanding_transactions))
-        # file.write("\n")
-        # file.write(json.dumps(participants))
+    try:
+        with open("blockchain.txt", mode="w") as file:
+            file.write(json.dumps(blockchain))
+            file.write("\n")
+            file.write(json.dumps(outstanding_transactions))
+            # file.write("\n")
+            # file.write(json.dumps(participants))
+    except IOError:
+        ("Saving failed!")
 
 
 def load_data():
     global blockchain, outstanding_transactions  # , participants
-    with open("blockchain.txt", mode="r") as file:
-        file_content = file.readlines()
-        blockchain = json.loads(file_content[0][:-1])
-        outstanding_transactions = json.loads(file_content[1])
-        updated_blockchain = []
-        updated_outstanding_transactions = []
+    try:
+        with open("blockchain.txt", mode="r") as file:
+            file_content = file.readlines()
+            blockchain = json.loads(file_content[0][:-1])
+            outstanding_transactions = json.loads(file_content[1])
+            updated_blockchain = []
+            updated_outstanding_transactions = []
 
-        # Necessary validation due to the fact that bytestream doesn't record OrderedDict but is serialized inside of text file
-        for block in blockchain:
-            updated_block = {
-                "prev_hash": block["prev_hash"],
-                "index": block["index"],
-                "transactions": [
-                    OrderedDict(
-                        [
-                            ("sender", tx["sender"]),
-                            ("recepient", tx["recepient"]),
-                            ("amount", tx["amount"]),
-                        ]
-                    )
-                    for tx in block["transactions"]
-                ],
-                "proof_of_work": block["proof_of_work"],
-            }
-            updated_blockchain.append(updated_block)
-        blockchain = updated_blockchain
+            # Necessary reconstruction due to the fact that json bytestream doesn't store OrderedDict
+            for block in blockchain:
+                updated_block = {
+                    "prev_hash": block["prev_hash"],
+                    "index": block["index"],
+                    "transactions": [
+                        OrderedDict(
+                            [
+                                ("sender", tx["sender"]),
+                                ("recepient", tx["recepient"]),
+                                ("amount", tx["amount"]),
+                            ]
+                        )
+                        for tx in block["transactions"]
+                    ],
+                    "proof_of_work": block["proof_of_work"],
+                }
+                updated_blockchain.append(updated_block)
+            blockchain = updated_blockchain
 
-        for txn in outstanding_transactions:
-            updated_txn = OrderedDict(
-                [
-                    ("sender", txn["sender"]),
-                    ("recepient", txn["recepient"]),
-                    ("amount", txn["amount"]),
-                ]
-            )
-            updated_outstanding_transactions.append(updated_txn)
-        outstanding_transactions = updated_outstanding_transactions
-
-        # participants = json.loads(file_content[2])
+            for txn in outstanding_transactions:
+                updated_txn = OrderedDict(
+                    [
+                        ("sender", txn["sender"]),
+                        ("recepient", txn["recepient"]),
+                        ("amount", txn["amount"]),
+                    ]
+                )
+                updated_outstanding_transactions.append(updated_txn)
+            outstanding_transactions = updated_outstanding_transactions
+            # participants = json.loads(file_content[2])
+    except IOError:
+        gen_block = {
+            "prev_hash": "",
+            "index": 0,
+            "transactions": [],
+            "proof_of_work": 0,
+        }
+        blockchain.append(gen_block)
+        outstanding_transactions = []
 
 
 load_data()
