@@ -27,8 +27,7 @@ def add_transaction(recepient, sender=owner, amount=1.0):
         participants.add(recepient)
         save_data()
         return True
-    else:
-        return False
+    return False
 
 
 def valid_proof_of_work(prev_hash, outstanding_transactions, proof_of_work):
@@ -69,11 +68,18 @@ def mine_block():
         "prev_hash": hash_block(get_last_block()),
         "index": int(get_last_block()["index"]) + 1,
         "transactions": outstanding_transactions,
-        "proof_of_work": proof_of_work,
+        "proof_of_work": proof_of_work
     }
-    outstanding_transactions = []
-    blockchain.append(new_block)
-    save_data()
+
+    if verify_blockchain:
+        blockchain.append(new_block)
+        outstanding_transactions = []
+        save_data()
+        return True
+    
+    # Mining unsuccessful so don't add minging reward
+    outstanding_transactions.pop()
+    return False
 
 
 def verify_blockchain():
@@ -113,18 +119,36 @@ def save_data():
         file.write(json.dumps(blockchain))
         file.write("\n")
         file.write(json.dumps(outstanding_transactions))
-        #file.write("\n")
-        #file.write(json.dumps(participants))
+        # file.write("\n")
+        # file.write(json.dumps(participants))
 
 
 def load_data():
-    global blockchain, outstanding_transactions, participants
+    global blockchain, outstanding_transactions #, participants
     with open("blockchain.txt", mode="r") as file:
-        file_content = file.readlines()        
+        file_content = file.readlines()
         blockchain = json.loads(file_content[0][:-1])
         outstanding_transactions = json.loads(file_content[1])
-        #participants = json.loads(file_content[2])
-        
+        updated_blockchain = []
+        updated_outstanding_transactions = []
+
+        # Necessary validation due to the fact that bytestream doesn't record OrderedDict but is serialized inside of text file
+        for block in blockchain:
+            updated_block = {
+                "prev_hash": block["prev_hash"],
+                "index": block["index"],
+                "transactions": [OrderedDict([("sender", tx["sender"]), ("recepient", tx["recepient"]), ("amount", tx["amount"])]) for tx in block["transactions"]],
+                "proof_of_work": block["proof_of_work"]
+            }
+            updated_blockchain.append(updated_block)
+        blockchain = updated_blockchain
+
+        for txn in outstanding_transactions:
+            updated_txn = OrderedDict([("sender", txn["sender"]), ("recepient", txn["recepient"]), ("amount", txn["amount"])])
+            updated_outstanding_transactions.append(updated_txn)
+        outstanding_transactions = updated_outstanding_transactions
+
+        # participants = json.loads(file_content[2])
 
 
 load_data()
@@ -148,14 +172,14 @@ while True:
         tx_details = get_transaction_details()
         recepient, amount = tx_details
         if add_transaction(recepient, amount=amount):
-            print("Transaction Successful!")
+            print("Transaction successful!")
         else:
-            print("Transaction Failed!")
+            print("Transaction failed due to insufficient funds!")
     elif user_choice == "2":
-        mine_block()
-        if not verify_blockchain():
-            print("Invalid blockchain!")
+        if not mine_block():
+            print("Mining failed!")
             break
+        print("Mining successful!")
     elif user_choice == "3":
         print(blockchain)
     elif user_choice == "4":
