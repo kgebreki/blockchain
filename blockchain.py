@@ -1,6 +1,13 @@
-from blockchain_util import sha256, hash_block, get_transaction_details, get_user_choice
+from blockchain_util import (
+    sha256,
+    hash_block,
+    get_transaction_details,
+    get_user_choice,
+    print_object,
+)
 from collections import OrderedDict
 import json
+from block import Block
 
 MINING_REWARD = 10
 blockchain = []
@@ -62,12 +69,12 @@ def mine_block():
     )
     outstanding_transactions.append(mining_reward_transaction)
 
-    new_block = {
-        "prev_hash": hash_block(get_last_block()),
-        "index": int(get_last_block()["index"]) + 1,
-        "transactions": outstanding_transactions,
-        "proof_of_work": proof_of_work,
-    }
+    new_block = Block(
+        hash_block(get_last_block()),
+        int(get_last_block().index) + 1,
+        outstanding_transactions,
+        proof_of_work,
+    )
 
     if verify_blockchain:
         blockchain.append(new_block)
@@ -84,11 +91,11 @@ def verify_blockchain():
     for (index, block) in enumerate(blockchain):
         if index == 0:
             continue
-        if block["prev_hash"] != hash_block(blockchain[index - 1]):
+        if block.prev_hash != hash_block(blockchain[index - 1]):
             print("Blockchain may have split. There is a block that is out of order")
             return False
         if not valid_proof_of_work(
-            block["prev_hash"], block["transactions"][:-1], block["proof_of_work"]
+            block.prev_hash, block.transactions[:-1], block.proof_of_work
         ):
             print("Proof of work not valid!")
             return False
@@ -100,7 +107,7 @@ def get_balance(participant):
     amount_received = 0.0
 
     for block in blockchain:
-        for transaction in block["transactions"]:
+        for transaction in block.transactions:
             if transaction["sender"] == participant:
                 amount_sent += transaction["amount"]
             elif transaction["recepient"] == participant:
@@ -115,7 +122,8 @@ def get_balance(participant):
 def save_data():
     try:
         with open("blockchain.txt", mode="w") as file:
-            file.write(json.dumps(blockchain))
+            reconstructed_blockchain = [block.__dict__ for block in blockchain]
+            file.write(json.dumps(reconstructed_blockchain))
             file.write("\n")
             file.write(json.dumps(outstanding_transactions))
             # file.write("\n")
@@ -136,10 +144,10 @@ def load_data():
 
             # Necessary reconstruction due to the fact that json bytestream doesn't store OrderedDict
             for block in blockchain:
-                updated_block = {
-                    "prev_hash": block["prev_hash"],
-                    "index": block["index"],
-                    "transactions": [
+                updated_block = Block(
+                    block["prev_hash"],
+                    block["index"],
+                    [
                         OrderedDict(
                             [
                                 ("sender", tx["sender"]),
@@ -149,8 +157,9 @@ def load_data():
                         )
                         for tx in block["transactions"]
                     ],
-                    "proof_of_work": block["proof_of_work"],
-                }
+                    block["proof_of_work"],
+                    block["timestamp"],
+                )
                 updated_blockchain.append(updated_block)
             blockchain = updated_blockchain
 
@@ -165,13 +174,8 @@ def load_data():
                 updated_outstanding_transactions.append(updated_txn)
             outstanding_transactions = updated_outstanding_transactions
             # participants = json.loads(file_content[2])
-    except IOError:
-        gen_block = {
-            "prev_hash": "",
-            "index": 0,
-            "transactions": [],
-            "proof_of_work": 0,
-        }
+    except (IOError, IndexError):
+        gen_block = Block("", 0, [], 0, 0)
         blockchain.append(gen_block)
         outstanding_transactions = []
 
@@ -206,7 +210,7 @@ while True:
             break
         print("Mining successful!")
     elif user_choice == "3":
-        print(blockchain)
+        print_object(blockchain)
     elif user_choice == "4":
         print_participant_balance()
     elif user_choice == "q":
