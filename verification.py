@@ -5,7 +5,7 @@ class Verification:
     def valid_proof_of_work(self, prev_hash, outstanding_transactions, proof_of_work):
         guess = (
             str(prev_hash)
-            + str([tx.to_ordered_dict for tx in outstanding_transactions])
+            + str([tx.to_ordered_dict() for tx in outstanding_transactions])
             + str(proof_of_work)
         ).encode()
         return sha256(guess)[0:2] == "00"
