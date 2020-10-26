@@ -1,9 +1,10 @@
 from blockchain import Blockchain
 from uuid import uuid4
 
+
 class Node:
     def __init__(self):
-        #self.id = str(uuid4())
+        # self.id = str(uuid4())
         self.id = "Kaleb"
         self.blockchain = Blockchain(self.id)
 
@@ -14,10 +15,6 @@ class Node:
 
     def get_user_choice(self):
         return input("Your choice: ")
-
-    def print_participant_balance(self, participants, get_balance):
-        for participant in participants:
-            print("{}  {:6.2f}".format(participant, get_balance(participant)))
 
     def listen_for_input(self):
         while True:
@@ -33,19 +30,20 @@ class Node:
                 tx_details = self.get_transaction_details()
                 recepient, amount = tx_details
                 if self.blockchain.add_transaction(self.id, recepient, amount):
-                    print("Transaction successful!")
+                    print("------Transaction successful------")
                 else:
-                    print("Transaction failed due to insufficient funds!")
+                    print("------Transaction failed due to insufficient funds------")
             elif user_choice == "2":
                 if not self.blockchain.mine_block():
-                    print("Mining failed")
+                    print("------Mining failed------")
                     break
-                print("Mining successful!")
+                print("------Mining successful------")
             elif user_choice == "3":
-                self.print_participant_balance(self.blockchain.participants, self.blockchain.get_balance)
+                self.blockchain.print_participant_balance()
             elif user_choice == "4":
                 print(self.blockchain)
             elif user_choice == "q":
                 break
+
 
 Node().listen_for_input()

@@ -5,86 +5,93 @@ from transaction import Transaction
 from verification import Verification
 
 MINING_REWARD = 10
+participants = dict()
+
 
 class Blockchain:
     def __init__(self, hosting_node_id):
         gen_block = Block("", 0, [], 0, 0)
         self.node = hosting_node_id
-        self.chain = [gen_block]
-        self.outstanding_transactions = []
-        self.participants = dict()
+        self.__chain = [gen_block]
+        self.__outstanding_transactions = []
         self.load_data()
 
-
     def get_last_block(self):
-        if len(self.chain) < 1:
+        if len(self.__chain) < 1:
             return None
-        return self.chain[-1]
-
+        return self.__chain[-1]
 
     def add_transaction(self, sender, recepient, amount):
+        global participants
         transaction = Transaction(sender, recepient, amount)
 
-        if Verification().verify_transaction(transaction, self.get_balance):
-            self.outstanding_transactions.append(transaction)
-            self.participants[sender] = True
-            self.participants[recepient] = True
+        if Verification.verify_transaction(transaction, self.get_balance):
+            self.__outstanding_transactions.append(transaction)
+            participants[sender] = True
+            participants[recepient] = True
             self.save_data()
             return True
         return False
 
-
     def get_proof_of_work(self):
         proof_of_work = 0
 
-        while not Verification().valid_proof_of_work(
-            hash_block(self.get_last_block()), self.outstanding_transactions, proof_of_work
+        while not Verification.valid_proof_of_work(
+            hash_block(self.get_last_block()),
+            self.__outstanding_transactions,
+            proof_of_work,
         ):
             proof_of_work += 1
         return proof_of_work
-
 
     def mine_block(self):
         proof_of_work = self.get_proof_of_work()
 
         mining_reward_transaction = Transaction(None, self.node, MINING_REWARD)
-        self.outstanding_transactions.append(mining_reward_transaction)
+        self.__outstanding_transactions.append(mining_reward_transaction)
 
         new_block = Block(
             hash_block(self.get_last_block()),
             int(self.get_last_block().index) + 1,
-            self.outstanding_transactions,
+            self.__outstanding_transactions,
             proof_of_work,
         )
-        self.chain.append(new_block)
-        
-        if Verification().verify_blockchain(self.chain):
-            self.outstanding_transactions = []
-            self.participants[self.node] = True
+        self.__chain.append(new_block)
+
+        if Verification.verify_blockchain(self.__chain):
+            global participants
+            self.__outstanding_transactions = []
+            participants[self.node] = True
             self.save_data()
             return True
 
-        self.chain.pop()
-        self.outstanding_transactions.pop()
+        self.__chain.pop()
+        self.__outstanding_transactions.pop()
         return False
-
 
     def get_balance(self, participant):
         amount_sent = 0.0
         amount_received = 0.0
 
-        for block in self.chain:
+        for block in self.__chain:
             for transaction in block.transactions:
                 if transaction.sender == participant:
                     amount_sent += transaction.amount
                 elif transaction.recepient == participant:
                     amount_received += transaction.amount
 
-        for transaction in self.outstanding_transactions:
+        for transaction in self.__outstanding_transactions:
             if transaction.sender == participant:
                 amount_sent += transaction.amount
         return float(amount_received - amount_sent)
 
+    def print_participant_balance(self):
+        global participants
+        if len(participants) < 1:
+            print("------Empty participants pool------")
+        else:
+            for participant in participants:
+                print("{}  {:6.2f}".format(participant, self.get_balance(participant)))
 
     def save_data(self):
         try:
@@ -99,20 +106,20 @@ class Blockchain:
                             block_el.proof_of_work,
                             block_el.timestamp,
                         )
-                        for block_el in self.chain
+                        for block_el in self.__chain
                     ]
                 ]
                 file.write(json.dumps(reconstructed_blockchain))
                 file.write("\n")
                 reconstructed_outstanding_transactions = [
-                    txn.__dict__ for txn in self.outstanding_transactions
+                    txn.__dict__ for txn in self.__outstanding_transactions
                 ]
                 file.write(json.dumps(reconstructed_outstanding_transactions))
                 file.write("\n")
-                file.write(json.dumps(self.participants))
+                global participants
+                file.write(json.dumps(participants))
         except IOError:
-            ("Saving failed!")
-
+            ("------Saving failed------")
 
     def load_data(self):
         try:
@@ -129,7 +136,10 @@ class Blockchain:
                         block["index"],
                         [
                             Transaction(
-                                tx["sender"], tx["recepient"], tx["amount"], tx["timestamp"]
+                                tx["sender"],
+                                tx["recepient"],
+                                tx["amount"],
+                                tx["timestamp"],
                             )
                             for tx in block["transactions"]
                         ],
@@ -137,14 +147,15 @@ class Blockchain:
                         block["timestamp"],
                     )
                     updated_blockchain.append(updated_block)
-                self.chain = updated_blockchain
+                self.__chain = updated_blockchain
 
                 for txn in outstanding_transactions:
                     updated_txn = Transaction(
                         txn["sender"], txn["recepient"], txn["amount"], txn["timestamp"]
                     )
                     updated_outstanding_transactions.append(updated_txn)
-                self.outstanding_transactions = updated_outstanding_transactions
-                self.participants = json.loads(file_content[2])
+                self.__outstanding_transactions = updated_outstanding_transactions
+                global participants
+                participants = json.loads(file_content[2])
         except (IOError, IndexError):
-            print("Initializing new blockchain with genesis block.")
+            print("------Initializing new blockchain with genesis block------")
