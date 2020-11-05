@@ -11,7 +11,7 @@ participants = dict()
 class Blockchain:
     def __init__(self, hosting_node_id):
         gen_block = Block("", 0, [], 0, 0)
-        self.node = hosting_node_id
+        self.__node = hosting_node_id
         self.__chain = [gen_block]
         self.__outstanding_transactions = []
         self.load_data()
@@ -46,8 +46,7 @@ class Blockchain:
 
     def mine_block(self):
         proof_of_work = self.get_proof_of_work()
-
-        mining_reward_transaction = Transaction(None, self.node, MINING_REWARD)
+        mining_reward_transaction = Transaction(None, self.__node, MINING_REWARD)
         self.__outstanding_transactions.append(mining_reward_transaction)
 
         new_block = Block(
@@ -61,7 +60,7 @@ class Blockchain:
         if Verification.verify_blockchain(self.__chain):
             global participants
             self.__outstanding_transactions = []
-            participants[self.node] = True
+            participants[self.__node] = True
             self.save_data()
             return True
 
