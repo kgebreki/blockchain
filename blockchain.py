@@ -5,6 +5,11 @@ from transaction import Transaction
 from verification import Verification
 
 MINING_REWARD = 10
+
+"""
+    Participant pool (which is currently a dict where key is name of participant and value is always true) to keep track 
+    of how much money each person has at a given time -- might go away later
+"""
 participants = dict()
 
 

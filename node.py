@@ -1,11 +1,13 @@
 from blockchain import Blockchain
 from uuid import uuid4
+from wallet import Wallet
 
 
 class Node:
     def __init__(self):
-        # self.id = str(uuid4())
-        self.id = "Kaleb"
+        wallet = Wallet()
+        wallet.create_keys()
+        self.id = wallet.public_key
         self.blockchain = Blockchain(self.id)
 
     def get_transaction_details(self):
