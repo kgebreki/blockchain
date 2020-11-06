@@ -1,5 +1,8 @@
 from blockchain_util import hash_block, sha256
-
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Signature import PKCS1_v1_5
+from Cryptodome.Hash import SHA256
+import binascii
 
 class Verification:
     @staticmethod
@@ -33,4 +36,9 @@ class Verification:
         if transaction.sender == transaction.recepient:
             return False
         sender_balance = get_balance(transaction.sender)
-        return sender_balance >= transaction.amount
+        if sender_balance >= transaction.amount:
+            return False
+        public_key = RSA.importKey(binascii.unhexlify(transaction.sender))
+        verifier = PKCS1_v1_5.new(public_key)
+        h = SHA256.new((str(transaction.sender) + str(transaction.recepient) + str(transaction.amount)).encode("utf8"))
+        verifier.verify(h, binascii.unhexlify(transaction.signature))

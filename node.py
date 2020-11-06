@@ -5,9 +5,8 @@ from wallet import Wallet
 
 class Node:
     def __init__(self):
-        wallet = Wallet()
-        wallet.create_keys()
-        self.id = wallet.public_key
+        self.wallet = Wallet()
+        self.id =  self.wallet.public_key
         self.blockchain = Blockchain(self.id)
 
     def get_transaction_details(self):
@@ -31,10 +30,11 @@ class Node:
             if user_choice == "1":
                 tx_details = self.get_transaction_details()
                 recepient, amount = tx_details
-                if self.blockchain.add_transaction(self.id, recepient, amount):
+                signature = self.wallet.sign_transaction(self.id, recepient, amount)
+                if self.blockchain.add_transaction(self.id, recepient, amount, signature):
                     print("------Transaction successful------")
                 else:
-                    print("------Transaction failed due to insufficient funds------")
+                    print("------Transaction failed ------")
             elif user_choice == "2":
                 if not self.blockchain.mine_block():
                     print("------Mining failed------")

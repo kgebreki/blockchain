@@ -6,10 +6,10 @@ from verification import Verification
 
 MINING_REWARD = 10
 
-"""
+'''
     Participant pool (which is currently a dict where key is name of participant and value is always true) to keep track 
     of how much money each person has at a given time -- might go away later
-"""
+'''
 participants = dict()
 
 
@@ -26,9 +26,9 @@ class Blockchain:
             return None
         return self.__chain[-1]
 
-    def add_transaction(self, sender, recepient, amount):
+    def add_transaction(self, sender, recepient, amount, signature):
         global participants
-        transaction = Transaction(sender, recepient, amount)
+        transaction = Transaction(sender, recepient, amount, signature)
 
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__outstanding_transactions.append(transaction)
@@ -51,7 +51,7 @@ class Blockchain:
 
     def mine_block(self):
         proof_of_work = self.get_proof_of_work()
-        mining_reward_transaction = Transaction(None, self.__node, MINING_REWARD)
+        mining_reward_transaction = Transaction(None, self.__node, MINING_REWARD, None)
         self.__outstanding_transactions.append(mining_reward_transaction)
 
         new_block = Block(
@@ -143,6 +143,7 @@ class Blockchain:
                                 tx["sender"],
                                 tx["recepient"],
                                 tx["amount"],
+                                tx["signature"],
                                 tx["timestamp"],
                             )
                             for tx in block["transactions"]
@@ -155,7 +156,11 @@ class Blockchain:
 
                 for txn in outstanding_transactions:
                     updated_txn = Transaction(
-                        txn["sender"], txn["recepient"], txn["amount"], txn["timestamp"]
+                        txn["sender"],
+                        txn["recepient"],
+                        txn["amount"],
+                        txn["signature"],
+                        txn["timestamp"],
                     )
                     updated_outstanding_transactions.append(updated_txn)
                 self.__outstanding_transactions = updated_outstanding_transactions

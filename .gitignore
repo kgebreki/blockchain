@@ -132,4 +132,4 @@ dmypy.json
 .vscode/
 
 # serialized data
-/blockchain.txt
+*.txt
