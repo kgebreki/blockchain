@@ -1,5 +1,4 @@
 from blockchain import Blockchain
-from uuid import uuid4
 from wallet import Wallet
 
 
@@ -38,8 +37,8 @@ class Node:
             elif user_choice == "2":
                 if not self.blockchain.mine_block():
                     print("------Mining failed------")
-                    break
-                print("------Mining successful------")
+                else:
+                    print("------Mining successful------")
             elif user_choice == "3":
                 self.blockchain.print_participant_balance()
             elif user_choice == "4":

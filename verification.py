@@ -33,12 +33,14 @@ class Verification:
 
     @staticmethod
     def verify_transaction(transaction, get_balance):
+        if (transaction.sender) == "MINING":
+            return True
         if transaction.sender == transaction.recepient:
             return False
         sender_balance = get_balance(transaction.sender)
-        if sender_balance >= transaction.amount:
+        if sender_balance < transaction.amount:
             return False
         public_key = RSA.importKey(binascii.unhexlify(transaction.sender))
         verifier = PKCS1_v1_5.new(public_key)
         h = SHA256.new((str(transaction.sender) + str(transaction.recepient) + str(transaction.amount)).encode("utf8"))
-        verifier.verify(h, binascii.unhexlify(transaction.signature))
+        return verifier.verify(h, binascii.unhexlify(transaction.signature))

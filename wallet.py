@@ -10,6 +10,7 @@ class Wallet:
         private_key, public_key = self.generate_key_pair()
         self.private_key = private_key
         self.public_key = public_key
+        self.load_keys()
         self.save_keys()
 
     def save_keys(self):
@@ -19,17 +20,18 @@ class Wallet:
                 f.write("\n")
                 f.write(self.public_key)
         except (IOError, IndexError):
-            print("Saving wallet failed!")
+            print("-----Saving wallet failed-----")
             
 
     def load_keys(self):
         try:
             with open("wallet.txt", mode="r") as f:
-                keys = f.realines()
+                keys = f.readlines()
                 self.private_key = keys[0][:-1]
                 self.public_key = keys[1]
+                print("-----Loading existing wallet-----")
         except (IOError, IndexError):
-            print("Loading wallet failed!")
+            print("-----Initializing new wallet-----")
 
     def generate_key_pair(self):
         private_key = RSA.generate(1024, Cryptodome.Random.new().read)
