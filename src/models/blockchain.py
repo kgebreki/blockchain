@@ -1,17 +1,19 @@
-from blockchain_util import hash_block
 import json
-from block import Block
-from transaction import Transaction
-from verification import Verification
+
+from util.hash_util import hash_block
+from models.block import Block
+from models.transaction import Transaction
+from util.verification import Verification
 
 MINING_REWARD = 10
 MINING_SENDER = "MINING"
 
-'''
+"""
     Participant pool (which is currently a dict where key is name of participant and value is always true) to keep track 
     of how much money each person has at a given time -- might go away later
-'''
+"""
 participants = dict()
+
 
 class Blockchain:
     def __init__(self, hosting_node_id):
@@ -25,6 +27,9 @@ class Blockchain:
         if len(self.__chain) < 1:
             return None
         return self.__chain[-1]
+
+    def get_blockchain(self):
+        return self.__chain
 
     def add_transaction(self, sender, recepient, amount, signature):
         global participants
@@ -51,7 +56,9 @@ class Blockchain:
 
     def mine_block(self):
         proof_of_work = self.get_proof_of_work()
-        mining_reward_transaction = Transaction(MINING_SENDER, self.__node, MINING_REWARD, None)
+        mining_reward_transaction = Transaction(
+            MINING_SENDER, self.__node, MINING_REWARD, None
+        )
         self.__outstanding_transactions.append(mining_reward_transaction)
 
         new_block = Block(
@@ -66,7 +73,7 @@ class Blockchain:
         for txn in self.__outstanding_transactions:
             if not Verification.verify_transaction(txn, self.get_balance):
                 return False
-        
+
         if Verification.verify_blockchain(self.__chain):
             global participants
             self.__outstanding_transactions = []
@@ -104,7 +111,7 @@ class Blockchain:
 
     def save_data(self):
         try:
-            with open("blockchain.txt", mode="w") as file:
+            with open("../target/blockchain.txt", mode="w") as file:
                 reconstructed_blockchain = [
                     block.__dict__
                     for block in [
@@ -132,7 +139,7 @@ class Blockchain:
 
     def load_data(self):
         try:
-            with open("blockchain.txt", mode="r") as file:
+            with open("../target/blockchain.txt", mode="r") as file:
                 file_content = file.readlines()
                 blockchain = json.loads(file_content[0][:-1])
                 outstanding_transactions = json.loads(file_content[1][:-1])
