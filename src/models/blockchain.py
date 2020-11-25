@@ -69,7 +69,7 @@ class Blockchain:
         )
         self.__chain.append(new_block)
 
-        # Check to see if any open transactions have been tampered with after being saved
+        # Check to see if any outstanding transactions have been tampered with after being saved
         for txn in self.__outstanding_transactions:
             if not Verification.verify_transaction(txn, self.get_balance):
                 return False
@@ -140,6 +140,7 @@ class Blockchain:
     def load_data(self):
         try:
             with open("../target/blockchain.txt", mode="r") as file:
+                print("------Loading existing blockchain------")
                 file_content = file.readlines()
                 blockchain = json.loads(file_content[0][:-1])
                 outstanding_transactions = json.loads(file_content[1][:-1])
