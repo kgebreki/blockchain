@@ -7,28 +7,34 @@ import binascii
 
 
 class Wallet:
-    def __init__(self):
+    def __init__(self, node):
         private_key, public_key = self.generate_key_pair()
         self.__private_key = private_key
         self.public_key = public_key
+        self.__node = str(node)
         self.load_keys()
         self.save_keys()
 
     def save_keys(self):
         try:
-            with open("../target/wallet.txt", mode="w") as f:
+            target_path = "../target/wallet" + self.__node + ".txt"
+            with open(target_path, mode="w") as f:
                 f.write(self.__private_key)
                 f.write("\n")
                 f.write(self.public_key)
+                f.write("\n")
+                f.write(self.__node)
         except (IOError, IndexError):
             print("-----Saving wallet failed-----")
 
     def load_keys(self):
         try:
-            with open("../target/wallet.txt", mode="r") as f:
-                keys = f.readlines()
-                self.__private_key = keys[0][:-1]
-                self.public_key = keys[1]
+            target_path = "../target/wallet" + self.__node + ".txt"
+            with open(target_path, mode="r") as f:
+                data = f.readlines()
+                self.__private_key = data[0][:-1]
+                self.public_key = data[1][:-1]
+                self.__node = data[2]
                 print("-----Loading existing wallet-----")
         except (IOError, IndexError):
             print("-----Initializing new wallet-----")

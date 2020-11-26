@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from argparse import ArgumentParser
 
 from models.wallet import Wallet
 from models.blockchain import Blockchain
@@ -14,11 +15,8 @@ status_codes = {
 
 
 server = Flask(__name__)
-wallet = Wallet()
-blockchain = Blockchain(wallet.public_key)
 CORS(server)
 host = "0.0.0.0"
-port = 8000
 
 
 @server.route("/", methods=["GET"])
@@ -122,4 +120,10 @@ def remove_node(node_url):
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-p", "--port", type=int, default=8000)
+    args = parser.parse_args()
+    port = args.port
+    wallet = Wallet(node=port)
+    blockchain = Blockchain(wallet.public_key + '-' + str(port))
     server.run(host=host, port=port)

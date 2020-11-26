@@ -18,7 +18,8 @@ participants = dict()
 class Blockchain:
     def __init__(self, hosting_node_id):
         gen_block = Block("", 0, [], 0, 0)
-        self.__node = hosting_node_id
+        self.__node_pub_key = hosting_node_id.split("-")[0]
+        self.__node_port = str(hosting_node_id.split("-")[1])
         self.__chain = [gen_block]
         self.__outstanding_transactions = []
         self.__peer_nodes = set()
@@ -64,7 +65,7 @@ class Blockchain:
     def mine_block(self):
         proof_of_work = self.get_proof_of_work()
         mining_reward_transaction = Transaction(
-            MINING_SENDER, self.__node, MINING_REWARD, None
+            MINING_SENDER, self.__node_pub_key, MINING_REWARD, None
         )
         self.__outstanding_transactions.append(mining_reward_transaction)
 
@@ -84,7 +85,7 @@ class Blockchain:
         if Verification.verify_blockchain(self.__chain):
             global participants
             self.__outstanding_transactions = []
-            participants[self.__node] = True
+            participants[self.__node_pub_key] = True
             self.save_data()
             return True
 
@@ -126,7 +127,8 @@ class Blockchain:
 
     def save_data(self):
         try:
-            with open("../target/blockchain.txt", mode="w") as file:
+            target_path = "../target/blockchain" + self.__node_port + ".txt"
+            with open(target_path, mode="w") as file:
                 reconstructed_blockchain = [
                     block.__dict__
                     for block in [
@@ -151,12 +153,15 @@ class Blockchain:
                 file.write(json.dumps(participants))
                 file.write("\n")
                 file.write(json.dumps(list(self.__peer_nodes)))
+                file.write("\n")
+                file.write(json.dumps(self.__node_port))
         except IOError:
             ("------Saving failed------")
 
     def load_data(self):
         try:
-            with open("../target/blockchain.txt", mode="r") as file:
+            target_path = "../target/blockchain" + self.__node_port + ".txt"
+            with open(target_path, mode="r") as file:
                 print("------Loading existing blockchain------")
                 file_content = file.readlines()
                 blockchain = json.loads(file_content[0][:-1])
@@ -196,7 +201,8 @@ class Blockchain:
                 self.__outstanding_transactions = updated_outstanding_transactions
                 global participants
                 participants = json.loads(file_content[2][:-1])
-                peer_nodes = json.loads(file_content[3])
+                peer_nodes = json.loads(file_content[3][:-1])
                 self.__peer_nodes = set(peer_nodes)
+                self.__node_port = json.loads(file_content[4])
         except (IOError, IndexError):
             print("------Initializing new blockchain with genesis block------")
