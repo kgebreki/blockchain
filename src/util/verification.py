@@ -39,9 +39,11 @@ class Verification:
         if (transaction.sender) == "MINING":
             return True
         if transaction.sender == transaction.recepient:
+            print("Transaction Failed: sender and recepient can't be the same.")
             return False
         sender_balance = get_balance(transaction.sender)
         if sender_balance < transaction.amount:
+            print("Transaction Failed: insufficient funds.")
             return False
         public_key = RSA.importKey(binascii.unhexlify(transaction.sender))
         verifier = PKCS1_v1_5.new(public_key)

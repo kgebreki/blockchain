@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from models.wallet import Wallet
@@ -23,20 +23,7 @@ port = 8000
 
 @server.route("/", methods=["GET"])
 def get_ui():
-    return "Blockchain server!"
-
-
-# TODO: get error objects so that clients have clear error messages
-@server.route("/mine", methods=["POST"])
-def mine_block():
-    if blockchain.mine_block():
-        block = blockchain.get_last_block()
-        new_block = block.__dict__.copy()
-        new_block["transactions"] = [tx.__dict__ for tx in new_block["transactions"]]
-        return jsonify(new_block), status_codes["CREATED"]
-    else:
-        response = {"Message": "Mining unsuccessful."}
-        return jsonify(response), status_codes["SERVER_ERROR"]
+    return "Blockchain implementation from scratch!"
 
 
 @server.route("/chain", methods=["GET"])
@@ -46,6 +33,54 @@ def get_blockchain():
     for block in snapshot_dict:
         block["transactions"] = [tx.__dict__ for tx in block["transactions"]]
     return jsonify(snapshot_dict), status_codes["SUCCESS"]
+
+
+@server.route("/transactions", methods=["GET"])
+def get_outstanding_transactions():
+    snapshot = blockchain.get_outstanding_transactions()
+    snapshot_dict = [tx.__dict__ for tx in snapshot]
+    return jsonify(snapshot_dict), status_codes["SUCCESS"]
+
+
+# TODO: get error objects and display them in UI so that clients have clear error messages
+@server.route("/mine", methods=["POST"])
+def mine_block():
+    if blockchain.mine_block():
+        block = blockchain.get_last_block()
+        new_block = block.__dict__.copy()
+        new_block["transactions"] = [tx.__dict__ for tx in new_block["transactions"]]
+        response = {"Message": "Mining successful.", "Block": new_block}
+        return jsonify(response), status_codes["CREATED"]
+    else:
+        response = {"Message": "Mining unsuccessful."}
+        return jsonify(response), status_codes["SERVER_ERROR"]
+
+
+@server.route("/transaction", methods=["POST"])
+def add_transaction():
+    tx_details = request.get_json()
+    if not tx_details:
+        response = {"Message": "No request body found"}
+        return response, status_codes["CLIENT_ERROR"]
+    # Check if incoming data has required fields
+    required_fields = ["recepient", "amount"]
+    if not all(field in tx_details for field in required_fields):
+        response = {"Message": "Request missing required fields"}
+        return response, status_codes["CLIENT_ERROR"]
+
+    sender = wallet.public_key
+    recepient = tx_details["recepient"]
+    amount = tx_details["amount"]
+    signature = wallet.sign_transaction(sender, recepient, amount)
+
+    if blockchain.add_transaction(sender, recepient, amount, signature):
+        transaction = blockchain.get_outstanding_transactions()[-1]
+        transaction = transaction.__dict__
+        response = {"Message": "Transaction successful", "Transaction": transaction}
+        return jsonify(response), status_codes["CREATED"]
+    else:
+        response = {"Message": "Transaction unsuccessful."}
+        return jsonify(response), status_codes["SERVER_ERROR"]
 
 
 if __name__ == "__main__":

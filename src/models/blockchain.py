@@ -31,6 +31,9 @@ class Blockchain:
     def get_blockchain(self):
         return self.__chain
 
+    def get_outstanding_transactions(self):
+        return self.__outstanding_transactions
+
     def add_transaction(self, sender, recepient, amount, signature):
         global participants
         transaction = Transaction(sender, recepient, amount, signature)
