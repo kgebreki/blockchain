@@ -21,6 +21,7 @@ class Blockchain:
         self.__node = hosting_node_id
         self.__chain = [gen_block]
         self.__outstanding_transactions = []
+        self.__peer_nodes = set()
         self.load_data()
 
     def get_last_block(self):
@@ -33,6 +34,9 @@ class Blockchain:
 
     def get_outstanding_transactions(self):
         return self.__outstanding_transactions
+
+    def get_peer_nodes(self):
+        return self.__peer_nodes
 
     def add_transaction(self, sender, recepient, amount, signature):
         global participants
@@ -112,6 +116,14 @@ class Blockchain:
             for participant in participants:
                 print("{}  {:6.2f}".format(participant, self.get_balance(participant)))
 
+    def add_peer_node(self, node):
+        self.__peer_nodes.add(node)
+        self.save_data()
+
+    def remove_peer_node(self, node):
+        self.__peer_nodes.discard(node)
+        self.save_data()
+
     def save_data(self):
         try:
             with open("../target/blockchain.txt", mode="w") as file:
@@ -137,6 +149,8 @@ class Blockchain:
                 file.write("\n")
                 global participants
                 file.write(json.dumps(participants))
+                file.write("\n")
+                file.write(json.dumps(list(self.__peer_nodes)))
         except IOError:
             ("------Saving failed------")
 
@@ -181,6 +195,8 @@ class Blockchain:
                     updated_outstanding_transactions.append(updated_txn)
                 self.__outstanding_transactions = updated_outstanding_transactions
                 global participants
-                participants = json.loads(file_content[2])
+                participants = json.loads(file_content[2][:-1])
+                peer_nodes = json.loads(file_content[3])
+                self.__peer_nodes = set(peer_nodes)
         except (IOError, IndexError):
             print("------Initializing new blockchain with genesis block------")

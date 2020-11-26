@@ -42,6 +42,13 @@ def get_outstanding_transactions():
     return jsonify(snapshot_dict), status_codes["SUCCESS"]
 
 
+@server.route("/node", methods=["GET"])
+def get_nodes():
+    nodes = list(blockchain.get_peer_nodes())
+    response = {"Nodes": nodes}
+    return jsonify(response), status_codes["SUCCESS"]
+
+
 # TODO: get error objects and display them in UI so that clients have clear error messages
 @server.route("/mine", methods=["POST"])
 def mine_block():
@@ -81,6 +88,37 @@ def add_transaction():
     else:
         response = {"Message": "Transaction unsuccessful."}
         return jsonify(response), status_codes["SERVER_ERROR"]
+
+
+@server.route("/node", methods=["POST"])
+def add_node():
+    node_details = request.get_json()
+    if not node_details:
+        response = {"Message": "No request body found"}
+        return response, status_codes["CLIENT_ERROR"]
+    if "node" not in node_details:
+        response = {"Message": "Node data invalid"}
+        return response, status_codes["CLIENT_ERROR"]
+    node = node_details["node"]
+    blockchain.add_peer_node(node)
+    response = {
+        "Message": "Node added successfully.",
+        "Nodes": list(blockchain.get_peer_nodes()),
+    }
+    return jsonify(response), status_codes["CREATED"]
+
+
+@server.route("/node/<node_url>", methods=["DELETE"])
+def remove_node(node_url):
+    if node_url == "" or node_url == None:
+        response = {"Message": "Invalid node url"}
+        return jsonify(response), status_codes["CLIENT_ERROR"]
+    blockchain.remove_peer_node(node_url)
+    response = {
+        "Message": "Node removed successfully",
+        "Nodes": list(blockchain.get_peer_nodes()),
+    }
+    return jsonify(response), status_codes["SUCCESS"]
 
 
 if __name__ == "__main__":
